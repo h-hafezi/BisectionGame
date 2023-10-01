@@ -35,7 +35,7 @@ func (node *Node) GetHash() *[32]byte {
 	return node.hash
 }
 
-func (node *Node) GetSibling() *Node {
+func (node *Node) getSibling() *Node {
 	parent := node.parent
 	if parent == nil {
 		panic("no sibling exists")
@@ -44,6 +44,15 @@ func (node *Node) GetSibling() *Node {
 		return parent.Right
 	} else {
 		return parent.Left
+	}
+}
+
+func (node *Node) GetPreviousNode() *Node {
+	// the previous node is the right child and if it does not exist, it's the sibling
+	if node.Right == nil {
+		return node.getSibling()
+	} else {
+		return node.Right
 	}
 }
 

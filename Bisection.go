@@ -7,10 +7,13 @@ import (
 
 /*
 	It takes two MMRs, 2 elements of these at index i and their previous elements (i-1) and finally proofs of membership
-	function eval is used to evaluate consecutive elements, it returns the false MMR, note that other isn't necessary correct
+	function eval is used to evaluate consecutive elements, if returns:
+		* 1 ==> the first MMR is false
+		* 2 ==> the second MMR is false
+		* 3 ==> both MMRs are false
 */
 func bisectionGame(mmr [2]*MerkleMountainRange.MerkleMountainRange) int {
-	// checking size, first check is the two mmr's are of the same size
+	// checking size, first check is the two MMRs are of the same size
 	if mmr[0].GetNumberOfElements() != mmr[1].GetNumberOfElements() {
 		panic("MMRs with inconsistent size")
 	}
@@ -18,7 +21,7 @@ func bisectionGame(mmr [2]*MerkleMountainRange.MerkleMountainRange) int {
 	array := MerkleMountainRange.GetPeakSizes(mmr[0].GetNumberOfElements())
 	// first find the peak where they're different
 	var peakIndex = -1
-	for i := len(mmr[0].Peaks) - 1; i >= 0; i -= 1 {
+	for i := 0; i <= len(mmr[0].Peaks); i += 1 {
 		if !bytes.Equal(mmr[0].Peaks[i].GetHash()[:], mmr[1].Peaks[i].GetHash()[:]) {
 			peakIndex = i
 		}
@@ -41,24 +44,38 @@ func bisectionGame(mmr [2]*MerkleMountainRange.MerkleMountainRange) int {
 	for {
 		// the basis case where the node has no children
 		if currentNode1.GetChildren() == 1 {
-			sibling1 := currentNode1.GetSibling()
-			sibling2 := currentNode2.GetSibling()
-			eval(sibling1, currentNode1)
+			previous1 := currentNode1.GetPreviousNode()
+			previous2 := currentNode2.GetPreviousNode()
+			if eval(previous1, currentNode1) == true {
+				return 2
+			} else if eval(previous2, currentNode2) == true {
+				return 1
+			} else {
+				return 0
+			}
 		} else {
-			left1 := currentNode1.Left
-			right1 := currentNode1.Right
-			left2 := currentNode2.Left
-			right2 := currentNode2.Right
-			if bytes.Equal(left1.GetHash()[:], left2.GetHash()[:]) {
-				if bytes.Equal(right1.GetHash()[:], right2.GetHash()[:]) {
-					panic("error")
+			// the left are equal so either the right nodes are different so the data at the current node
+			if bytes.Equal(currentNode1.Left.GetHash()[:], currentNode2.Left.GetHash()[:]) {
+				if bytes.Equal(currentNode1.Right.GetHash()[:], currentNode2.Right.GetHash()[:]) {
+					// the current data is different
+					previous1 := currentNode1.GetPreviousNode()
+					previous2 := currentNode2.GetPreviousNode()
+					if eval(previous1, currentNode1) == true {
+						return 2
+					} else if eval(previous2, currentNode2) == true {
+						return 1
+					} else {
+						return 0
+					}
 				} else {
-					currentNode1 = right1
-					currentNode2 = right2
+					// the right values are different and hence update the current nodes
+					currentNode1 = currentNode1.Right
+					currentNode2 = currentNode2.Right
 				}
 			} else {
-				currentNode1 = left1
-				currentNode2 = left2
+				// the left values are different and hence update the current nodes
+				currentNode1 = currentNode1.Left
+				currentNode2 = currentNode2.Left
 			}
 		}
 	}
